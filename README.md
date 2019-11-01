@@ -1,3 +1,6 @@
+# Comment
+This version of octoprint telegram is in development. Goal is to add GPIO controller.
+
 
 # OctoPrint-Telegram
 
