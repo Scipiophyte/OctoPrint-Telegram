@@ -5,6 +5,22 @@ import requests
 from flask.ext.babel import gettext
 from .telegramNotifications import telegramMsgDict
 
+try:
+	import RPi.GPIO as GPIO
+	#use GPIO no. instead of PIN no.
+	GPIO.setmode(GPIO.BCM)
+	#ignore warnings that results of two scrips using the same GPIO
+	GPIO.setwarnings(False)
+	#set the GPIO no.
+	channel = 21
+	#setup the GPIO as output
+	GPIO.setup(channel, GPIO.OUT)
+	#set the GPIO to HIGH
+	GPIO.output(channel, 1)
+	GPIO_success = True
+except:
+	GPIO_success = False
+
 ################################################################################################################
 # This class handles received commands/messages (commands in the following). commandDict{} holds the commands and their behavior.
 # Each command has its own handler. If you want to add/del commands, read the following:
@@ -25,25 +41,14 @@ class TCMD():
 		self.commandDict = {
 			"Yes": 			{'cmd': self.cmdYes, 'bind_none': True},
 			"No":  			{'cmd': self.cmdNo, 'bind_none': True},
-			'/test':  		{'cmd': self.cmdTest, 'bind_none': True},
-			'/status':  	{'cmd': self.cmdStatus},
-			'/gif':  		{'cmd': self.cmdGif}, #giloser 05/05/19 add gif command
-			'/supergif':  	{'cmd': self.cmdSuperGif}, #giloser 05/05/19 add gif command
-			'/settings':  	{'cmd': self.cmdSettings, 'param': True},
-			'/abort':  		{'cmd': self.cmdAbort, 'param': True},
-			'/togglepause':	{'cmd': self.cmdTogglePause},
-			'/shutup':  	{'cmd': self.cmdShutup},
-			'/dontshutup':  {'cmd': self.cmdNShutup},
-			'/print':  		{'cmd': self.cmdPrint, 'param': True},
-			'/files':  		{'cmd': self.cmdFiles, 'param': True},
-			'/upload':  	{'cmd': self.cmdUpload},
-			'/filament':	{'cmd': self.cmdFilament, 'param': True},
-			'/sys': 		{'cmd': self.cmdSys, 'param': True},
-			'/ctrl': 		{'cmd': self.cmdCtrl, 'param': True},
-			'/con': 		{'cmd': self.cmdConnection, 'param': True},
-			'/user': 		{'cmd': self.cmdUser},
-			'/tune':		{'cmd': self.cmdTune, 'param': True},
-			'/help':  		{'cmd': self.cmdHelp, 'bind_none': True}
+			"PowerOFF":		{'cmd': self.cmdPowerOFF, 'bind_none': True},
+			"PowerON":		{'cmd': self.cmdPowerON, 'bind_none': True},
+			'/off':  		{'cmd': self.cmdOff, 'param': False},
+			'/gif':  		{'cmd': self.cmdGif, 'param': True},
+			'/supergif':  		{'cmd': self.cmdSuperGif, 'param': True},
+			'/user': 		{'cmd': self.cmdUser, 'bind_none': True},
+			'/help':  		{'cmd': self.cmdHelp, 'bind_none': True},
+			'/on':			{'cmd': self.cmdOn, 'param': False}
 		}
 		
 
@@ -55,6 +60,29 @@ class TCMD():
 ############################################################################################
 	def cmdNo(self,chat_id,from_id,cmd,parameter):
 		self.main.send_msg(gettext("Maybe next time."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id),inline=False)
+############################################################################################
+	def cmdPowerOFF(self,chat_id,from_id,cmd,parameter):
+		if GPIO_success:
+			if GPIO.input(channel):
+				self.main.send_msg(gettext("Powering off..."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id),inline=False)
+				GPIO.output(channel, 0)
+			else:
+				self.main.send_msg(gettext("Power already off."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id),inline=False)
+############################################################################################
+	def cmdPowerON(self,chat_id,from_id,cmd,parameter):
+		if GPIO_success:
+			if not GPIO.input(channel):
+				self.main.send_msg(gettext("Powering on..."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id),inline=False)
+				GPIO.output(channel, 1)
+			else:
+				self.main.send_msg(gettext("Power already on."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id),inline=False)
+############################################################################################
+	def cmdOff(self,chat_id,from_id,cmd,parameter):
+		self.main.send_msg(self.gEmo('question') + gettext(" Do you realy want to power off the printer?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"PowerOFF"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
+############################################################################################
+	def cmdOn(self,chat_id,from_id,cmd,parameter):
+		self.main.send_msg(self.gEmo('question') + gettext(" Do you realy want to power on the printer?\n"
+														   " Please make sure that no boby become into danger if you do so!\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"PowerON"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
 ############################################################################################
 	def cmdTest(self,chat_id,from_id,cmd,parameter):
 		self.main.send_msg(self.gEmo('question') + gettext(" Is this a test?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"Yes"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
