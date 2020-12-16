@@ -48,7 +48,8 @@ class TCMD():
 			'/supergif':  		{'cmd': self.cmdSuperGif, 'param': True},
 			'/user': 		{'cmd': self.cmdUser, 'bind_none': True},
 			'/help':  		{'cmd': self.cmdHelp, 'bind_none': True},
-			'/on':			{'cmd': self.cmdOn, 'param': False}
+			'/on':			{'cmd': self.cmdOn, 'param': False},
+			'/sys': 		{'cmd': self.cmdSys, 'param': True}
 		}
 		
 
